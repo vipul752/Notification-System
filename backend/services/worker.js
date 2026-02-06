@@ -4,6 +4,7 @@ import {
   DeleteMessageCommand,
 } from "@aws-sdk/client-sqs";
 import { sendEmail } from "./emailService.js";
+import NotificationLog from "../models/NotificationLog.js";
 
 const sqs = new SQSClient({ region: process.env.AWS_REGION });
 
@@ -19,6 +20,23 @@ async function pollQueue() {
   if (!res.Messages) return;
 
   for (const msg of res.Messages) {
+    const messageId = msg.MessageId;
+
+    let logs = await NotificationLog.findOne({ messageId });
+
+    if (!logs) {
+      logs = await NotificationLog.create({
+        messageId,
+        eventType: JSON.parse(msg.Body).type,
+        email: JSON.parse(msg.Body).email,
+        status: "PENDING",
+        attempts: 1,
+      });
+    } else {
+      logs.attempts += 1;
+      await logs.save();
+    }
+
     const data = JSON.parse(msg.Body);
 
     try {
@@ -29,6 +47,8 @@ async function pollQueue() {
       if (data.type === "LOGIN") {
         await sendEmail(data.email, "Login Alert", "You just logged in.");
       }
+      logs.status = "SENT";
+      await logs.save();
 
       await sqs.send(
         new DeleteMessageCommand({
@@ -37,9 +57,18 @@ async function pollQueue() {
         }),
       );
     } catch (err) {
+      logs.status = "FAILED";
+      logs.error = err.message;
+      await logs.save();
       console.error("Worker error:", err.message);
     }
   }
 }
 
-setInterval(pollQueue, 5000);
+async function startWorker() {
+  while (true) {
+    await pollQueue();
+  }
+}
+
+startWorker();

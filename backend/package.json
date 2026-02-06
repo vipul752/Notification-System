@@ -6,6 +6,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "mongoose": "^9.1.6",
     "sib-api-v3-sdk": "^8.5.0"
   },
   "name": "backend",

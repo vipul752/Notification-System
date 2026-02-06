@@ -20,5 +20,4 @@ export async function sendEmail(toEmail, subject, text) {
       textContent: text,
     });
 
-    // throw new Error("FORCED EMAIL FAILURE");
 }

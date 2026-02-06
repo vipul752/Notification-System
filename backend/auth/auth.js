@@ -3,7 +3,6 @@ import { sendToQueue } from "../services/sqs.js";
 
 const router = express.Router();
 
-console.log("🔥 AUTH ROUTES FILE LOADED 🔥");
 // SIGNUP
 
 router.get("/test", (req, res) => {
